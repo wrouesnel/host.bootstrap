@@ -1,0 +1,16 @@
+[Unit]
+Description=Host Bootstrap
+Before=initrd-root-device.target
+Requires=basic.target
+DefaultDependencies=no
+ConditionPathExists=/etc/initrd-release
+
+[Service]
+Type=oneshot
+ExecStart=/bootstrap
+ExecStartPost=/bin/systemctl --no-block start initrd-switch-root.target
+TimeoutSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=initrd-root-device.target
