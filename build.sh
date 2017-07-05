@@ -6,7 +6,10 @@ if [ $EUID != 0 ]; then
 fi
 
 SUITE=zesty
+src=src
 root=root
+boot=boot
+tmp=tmp
 
 function join { local IFS="$1"; shift; echo "$*"; }
 
@@ -17,12 +20,21 @@ function make_dir() {
 
 function bootstrap_make_dir() {
     make_dir "$1"
-    echo "rmdir -v /sysroot/$1 || /bin/true" >> bootstrap_cleanup
+    echo "rmdir -v /sysroot/$1 || /bin/true" >> $tmp/bootstrap_cleanup
+}
+
+# move_file moves a file around within the context of the root
+function move_file() {
+    mv -f "$root/$1" "$root/$2"
 }
 
 # copy_file copies file to the given path in the root
 function copy_file() {
-    cp -f "$1" "$root/$2"
+    cp -f "$src/$1" "$root/$2"
+}
+
+function wipe_file() {
+    > "$root/$1"
 }
 
 # bootstrap_copy copies a file and writes a removal entry for after
@@ -30,7 +42,7 @@ function copy_file() {
 # of the bootstrap initrd
 function bootstrap_copy_file() {
     copy_file "$1" "$2"
-    echo "rm -v -f /sysroot/$2" >> bootstrap_cleanup
+    echo "rm -v -f /sysroot/$2" >> $tmp/bootstrap_cleanup
 }
 
 # mk_symlink builds a symlink pointed to arg1 at arg2 in the image.
@@ -39,8 +51,8 @@ function make_symlink() {
 }
 
 function bootstrap_make_symlink() {
-    make_symlink "$1" "$2"
-    echo "rm -v -f /sysroot/$2" >> bootstrap_cleanup
+    make_symlink "$1" "$root/$2"
+    echo "rm -v -f /sysroot/$2" >> $tmp/bootstrap_cleanup
 }
 
 PACKAGES=(
@@ -72,9 +84,11 @@ PACKAGES=(
 
 # Clean up the old root
 [ -e "$root" ] && [ ! -z "$root" ] && rm -rf $root
+# Clean up the old boot
+[ -e "$boot" ] && [ ! -z "$boot" ] && rm -rf $boot && mkdir -p "$boot"
 
 # Empty the bootstrap_cleanup file
-> bootstrap_cleanup
+> $tmp/bootstrap_cleanup
 
 echo "Bootstrapping..."
 http_proxy=$http_proxy https_proxy=$https_proxy debootstrap \
@@ -134,35 +148,35 @@ make_symlink /etc/systemd/system/ssh-host-keys.service /etc/systemd/system/ssh.s
 
 echo "Copying cleanup directives"
 # Duplicate the copy so we actually incorporate the copy.
-tac bootstrap_cleanup > bootstrap_cleanup.real
-bootstrap_copy_file bootstrap_cleanup.real /bootstrap_cleanup
-tac bootstrap_cleanup > bootstrap_cleanup.real
-bootstrap_copy_file bootstrap_cleanup.real /bootstrap_cleanup
+tac $tmp/bootstrap_cleanup > $tmp/bootstrap_cleanup.real
+bootstrap_copy_file $tmp/bootstrap_cleanup.real /bootstrap_cleanup
+tac $tmp/bootstrap_cleanup > $tmp/bootstrap_cleanup.real
+bootstrap_copy_file $tmp/bootstrap_cleanup.real /bootstrap_cleanup
 
 # Remove un-needed things
-cp $root/boot/vmlinuz-* vmlinuz
 # Important - delete the SSH host keys so the bootstrapper sets them up.
 rm -rf $root/var/cache/apt/archives/*
 rm -f $root/etc/ssh/*_key rm -f $root/etc/ssh/*_key.pub
 
 # Notify systemd it'll be initrd mode
-mv $root/etc/os-release $root/etc/initrd-release
+move_file /etc/os-release /etc/initrd-release
 
 # Clear out /etc/machine-id (bootstrap will generate one).
-> $root/etc/machine-id
+wipe_file /etc/machine-id
+
+echo "Extracting kernel..."
+# Extract the kernel (there should only be 1)
+cp $root/boot/vmlinuz-* $boot/vmlinuz
 
 echo "Building initrd..."
-
-cd root || exit 1
-
+pwd="$(pwd)"
+cd $root || exit 1
 # Command which builds the initramfs
-find . | cpio -H newc -o | gzip -c > ../initrd || exit 1
+find . | cpio -H newc -o | gzip -c > $boot/initrd || exit 1
+cd "$pwd"
 
-cd ..
-
-chown $SUDO_UID:$SUDO_GID vmlinuz initrd
+echo "Setting owner on extracted files..."
+chown $SUDO_UID:$SUDO_GID $boot/vmlinuz $boot/initrd
 
 echo "Build Finished"
 
-echo "Starting Virtual Machine..."
-sudo -u $(id -n -u $SUDO_UID) -g $(id -n -g $SUDO_GID) ./build-2.sh

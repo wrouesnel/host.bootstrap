@@ -78,7 +78,7 @@ log "Copying initial root credentials..."
 echo "root:$bootstrap_root_password" | chpasswd || fatal 1 "Could not set bootstrap root password."
 mkdir -p /root/.ssh || fatal 1 "Could not create root .ssh dir"
 chmod 755 /root/.ssh || fatal 1 "Could not set ownership on root .ssh dir"
-( echo "$bootstrap_root_key" | base64 -d > /root/.ssh/authorized_keys ) || fatal 1 "Failed decording bootstrap root password."
+( echo "$bootstrap_root_key" | base64 -d > /root/.ssh/authorized_keys ) || fatal 1 "Failed decording bootstrap root key."
 
 log "Copying bootstrap initramfs to root..."
 rsync -W -a -x --human-readable / /sysroot/ 2>&1 || fatal 1 "Failed copying OS to /sysroot"
