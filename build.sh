@@ -5,11 +5,7 @@ if [ $EUID != 0 ]; then
     exec sudo "$0" "$@"
 fi
 
-SUITE=zesty
-src=src
-root=root
-boot=boot
-tmp=tmp
+. settings.sh
 
 function join { local IFS="$1"; shift; echo "$*"; }
 

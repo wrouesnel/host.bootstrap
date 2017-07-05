@@ -1,7 +1,3 @@
-bootstrap_cleanup.real
-bootstrap_cleanup
-vmlinuz
-initrd
-root
-diskimage.qcow2
-root.password
+/tmp
+/root
+/boot

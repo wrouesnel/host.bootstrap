@@ -1,7 +1,6 @@
 #!/bin/bash
 
-output_img=diskimage.qcow2
-output_size=${output_size:-100G}
+. settings.sh
 
 [ -e "$output_img" ] && rm -v -f "$output_img"
 
