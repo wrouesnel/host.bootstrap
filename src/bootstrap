@@ -74,8 +74,13 @@ mkfs.ext4 ${target_device}2 || fatal 1 "Could not create root filesystem."
 log "Mounting root filesystem"
 mount ${target_device}2 /sysroot || fatal 1 "Could not mount new root filesystem."
 
-log "Copying initial root credentials..."
-echo "root:$bootstrap_root_password" | chpasswd || fatal 1 "Could not set bootstrap root password."
+# Set bootstrap root password if requested.
+if [ ! -z "${bootstrap_root_password}" ]; then
+    log "Copying initial root credentials..."
+    echo "root:$bootstrap_root_password" | chpasswd || fatal 1 "Could not set bootstrap root password."
+fi
+
+# Bootstrap root key is not optional.
 mkdir -p /root/.ssh || fatal 1 "Could not create root .ssh dir"
 chmod 755 /root/.ssh || fatal 1 "Could not set ownership on root .ssh dir"
 ( echo "$bootstrap_root_key" | base64 -d > /root/.ssh/authorized_keys ) || fatal 1 "Failed decording bootstrap root key."
