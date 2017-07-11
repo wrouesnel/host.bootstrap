@@ -20,9 +20,9 @@ echo "Temporary Root Password: $root_password"
 echo "SSH listening on 10022"
 echo "Remember to clear SSH host keys once disk build is finished."
 
-kvm -m 2048M -drive file=${output_img},cache=unsafe \
+kvm -m 2048M -drive file="${output_img}",cache=unsafe \
     -netdev user,id=network0,hostfwd=tcp::10022-:22 -device virtio-net-pci,netdev=network0 \
-    -kernel vmlinuz -initrd initrd \
+    -kernel $boot/vmlinuz -initrd $boot/initrd \
     -append "console=tty0 console=ttyS0,115200n8 bootstrap_root_password=$root_password bootstrap_root_key=$root_key $@" \
     -vnc :0 \
     -serial stdio

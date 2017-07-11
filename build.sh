@@ -47,7 +47,7 @@ function make_symlink() {
 }
 
 function bootstrap_make_symlink() {
-    make_symlink "$1" "$root/$2"
+    make_symlink "$1" "$2"
     echo "rm -v -f /sysroot/$2" >> $tmp/bootstrap_cleanup
 }
 
@@ -82,6 +82,8 @@ PACKAGES=(
 [ -e "$root" ] && [ ! -z "$root" ] && rm -rf $root
 # Clean up the old boot
 [ -e "$boot" ] && [ ! -z "$boot" ] && rm -rf $boot && mkdir -p "$boot"
+# Clean up old tmp
+[ -e "$tmp" ] && [ ! -z "$tmp" ] && rm -rf $tmp && mkdir -p "$tmp"
 
 # Empty the bootstrap_cleanup file
 > $tmp/bootstrap_cleanup
@@ -145,9 +147,9 @@ make_symlink /etc/systemd/system/ssh-host-keys.service /etc/systemd/system/ssh.s
 echo "Copying cleanup directives"
 # Duplicate the copy so we actually incorporate the copy.
 tac $tmp/bootstrap_cleanup > $tmp/bootstrap_cleanup.real
-bootstrap_copy_file $tmp/bootstrap_cleanup.real /bootstrap_cleanup
+bootstrap_copy_file ../$tmp/bootstrap_cleanup.real /bootstrap_cleanup
 tac $tmp/bootstrap_cleanup > $tmp/bootstrap_cleanup.real
-bootstrap_copy_file $tmp/bootstrap_cleanup.real /bootstrap_cleanup
+bootstrap_copy_file ../$tmp/bootstrap_cleanup.real /bootstrap_cleanup
 
 # Remove un-needed things
 # Important - delete the SSH host keys so the bootstrapper sets them up.
@@ -172,7 +174,7 @@ find . | cpio -H newc -o | gzip -c > $pwd/$boot/initrd || exit 1
 cd "$pwd"
 
 echo "Setting owner on extracted files..."
-chown $SUDO_UID:$SUDO_GID $boot/vmlinuz $boot/initrd
+chown -R $SUDO_UID:$SUDO_GID $boot
 
 echo "Build Finished"
 
