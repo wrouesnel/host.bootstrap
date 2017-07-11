@@ -2,7 +2,7 @@
 # Simple build script for a simple system
 
 if [ $EUID != 0 ]; then
-    exec sudo "$0" "$@"
+    exec sudo http_proxy=$http_proxy https_proxy=$https_proxy NO_BOOTSTRAP=$NO_BOOTSTRAP "$0" "$@"
 fi
 
 . settings.sh
@@ -26,7 +26,7 @@ function move_file() {
 
 # copy_file copies file to the given path in the root
 function copy_file() {
-    cp -f "$src/$1" "$root/$2"
+    cp -f "$1" "$root/$2"
 }
 
 function wipe_file() {
@@ -125,7 +125,7 @@ echo "Set hostname"
 echo "bootstrap" > $root/etc/hostname
 
 echo "Bootstrap /etc/hosts"
-copy_file hosts /etc/hosts
+copy_file $src/hosts /etc/hosts
 
 echo "Set default target..."
 bootstrap_make_symlink /lib/systemd/system/initrd.target /etc/systemd/system/default.target
@@ -140,8 +140,8 @@ bootstrap_make_symlink /lib/systemd/systemd /init
 
 if [ "$NO_BOOTSTRAP" != "1" ] ; then
     echo "Provisioning script"
-    bootstrap_copy_file bootstrap /bootstrap
-    bootstrap_copy_file bootstrap.service /etc/systemd/system/bootstrap.service
+    bootstrap_copy_file $src/bootstrap /bootstrap
+    bootstrap_copy_file $src/bootstrap.service /etc/systemd/system/bootstrap.service
     bootstrap_make_dir /etc/systemd/system/initrd-root-device.target.wants
     bootstrap_make_symlink /etc/systemd/system/bootstrap.service /etc/systemd/system/initrd-root-device.target.wants/bootstrap.service
 else
@@ -150,16 +150,16 @@ else
     copy_file $HOME/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 fi
 
-copy_file ssh-host-keys.service /etc/systemd/system/ssh-host-keys.service
+copy_file $src/ssh-host-keys.service /etc/systemd/system/ssh-host-keys.service
 make_dir /etc/systemd/system/ssh.service.wants
 make_symlink /etc/systemd/system/ssh-host-keys.service /etc/systemd/system/ssh.service.wants/ssh-host-keys.service
 
 echo "Copying cleanup directives"
 # Duplicate the copy so we actually incorporate the copy.
 tac $tmp/bootstrap_cleanup > $tmp/bootstrap_cleanup.real
-bootstrap_copy_file ../$tmp/bootstrap_cleanup.real /bootstrap_cleanup
+bootstrap_copy_file $tmp/bootstrap_cleanup.real /bootstrap_cleanup
 tac $tmp/bootstrap_cleanup > $tmp/bootstrap_cleanup.real
-bootstrap_copy_file ../$tmp/bootstrap_cleanup.real /bootstrap_cleanup
+bootstrap_copy_file $tmp/bootstrap_cleanup.real /bootstrap_cleanup
 
 # Remove un-needed things
 # Important - delete the SSH host keys so the bootstrapper sets them up.
