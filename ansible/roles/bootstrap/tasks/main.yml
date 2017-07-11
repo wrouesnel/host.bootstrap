@@ -1,0 +1,40 @@
+---
+tasks:
+- name: configure apt
+  copy:
+    dest: /etc/apt/apt.conf
+    owner: root
+    group: root
+    mode: 0644
+    content: |
+      APT::Install-Suggests "0"; APT::Install-Recommends "0";
+
+- name: refresh bootstrap packages
+  package:
+    name: "{{item}}"
+    state: latest
+  with_items:
+  - sudo
+  - e2fsprogs
+  - gdisk
+  - coreutils
+  - systemd
+  - systemd-sysv
+  - dbus
+  - login
+  - rsync
+  - procps
+  - mount
+  - less
+  - grep
+  - sed
+  - nano
+  - util-linux
+  - locales
+  - iproute2
+  - kexec-tools
+  - python
+  - apt-transport-https
+  - openssh-server
+  - grub-pc
+  - linux-image-generic

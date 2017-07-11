@@ -81,9 +81,13 @@ PACKAGES=(
 # Clean up the old root
 [ -e "$root" ] && [ ! -z "$root" ] && rm -rf $root
 # Clean up the old boot
-[ -e "$boot" ] && [ ! -z "$boot" ] && rm -rf $boot && mkdir -p "$boot"
+[ -e "$boot" ] && [ ! -z "$boot" ] && rm -rf $boot
 # Clean up old tmp
-[ -e "$tmp" ] && [ ! -z "$tmp" ] && rm -rf $tmp && mkdir -p "$tmp"
+[ -e "$tmp" ] && [ ! -z "$tmp" ] && rm -rf $tmp
+
+mkdir -p "$root"
+mkdir -p "$boot"
+mkdir -p "$tmp"
 
 # Empty the bootstrap_cleanup file
 > $tmp/bootstrap_cleanup

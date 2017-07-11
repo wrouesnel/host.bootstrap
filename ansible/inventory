@@ -1,0 +1,1 @@
+bootstrap ansible_host=localhost ansible_port=10022 ansible_user=root

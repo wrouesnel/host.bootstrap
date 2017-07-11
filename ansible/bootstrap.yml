@@ -1,0 +1,28 @@
+- hosts: all
+  become: true
+  roles:
+  - bootstrap
+  tasks:
+  - name: including normal site.yml
+    include: "{{ item }}"
+    with_first_found:
+    - files:
+      - "{{ playbook_dir }}/site.yml"
+      skip: true
+
+  - name: copy finalizer script
+    copy:
+      src: finalize.sh
+      dest: /root/finalize.sh
+      mode: 0700
+      owner: root
+      group: root
+    tags:
+    - bootstrap-finalize
+
+  - name: executing finalizer script
+    command: /root/finalize.sh
+    tags:
+    - bootstrap-finalize      
+
+
