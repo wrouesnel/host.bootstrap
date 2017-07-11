@@ -168,7 +168,7 @@ echo "Building initrd..."
 pwd="$(pwd)"
 cd $root || exit 1
 # Command which builds the initramfs
-find . | cpio -H newc -o | gzip -c > $boot/initrd || exit 1
+find . | cpio -H newc -o | gzip -c > $pwd/$boot/initrd || exit 1
 cd "$pwd"
 
 echo "Setting owner on extracted files..."
