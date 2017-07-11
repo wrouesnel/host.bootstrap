@@ -103,10 +103,10 @@ bootstrap_make_dir /etc/systemd/system/initrd.target.wants
 make_dir /sysroot
 
 make_dir /etc/systemd/system/systemd-networkd.service.d
-copy_file systemd-networkd-dbus.conf /etc/systemd/system/systemd-networkd.service.d/systemd-networkd-dbus.conf
+copy_file $src/systemd-networkd-dbus.conf /etc/systemd/system/systemd-networkd.service.d/systemd-networkd-dbus.conf
 
 echo "Setting generic DHCP networking"
-copy_file all.network /etc/systemd/network/all.network
+copy_file $src/all.network /etc/systemd/network/all.network
 make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/multi-user.target.wants/systemd-resolved.service
 make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/multi-user.target.wants/systemd-networkd.service
 make_symlink /lib/systemd/resolv.conf /etc/resolv.conf
@@ -127,9 +127,6 @@ echo "bootstrap" > $root/etc/hostname
 echo "Bootstrap /etc/hosts"
 copy_file $src/hosts /etc/hosts
 
-echo "Set default target..."
-bootstrap_make_symlink /lib/systemd/system/initrd.target /etc/systemd/system/default.target
-
 echo "Activate systemd in initrd"
 bootstrap_make_symlink /lib/systemd/systemd /init
 
@@ -144,10 +141,15 @@ if [ "$NO_BOOTSTRAP" != "1" ] ; then
     bootstrap_copy_file $src/bootstrap.service /etc/systemd/system/bootstrap.service
     bootstrap_make_dir /etc/systemd/system/initrd-root-device.target.wants
     bootstrap_make_symlink /etc/systemd/system/bootstrap.service /etc/systemd/system/initrd-root-device.target.wants/bootstrap.service
+    
+    echo "Set default target..."
+    bootstrap_make_symlink /lib/systemd/system/initrd.target /etc/systemd/system/default.target
 else
     echo "Bootstrap script disabled. Copying SSH public key into initrd."
     make_dir /root/.ssh
     copy_file $HOME/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+    
+    echo "Leaving default.target at multi-user.target"
 fi
 
 copy_file $src/ssh-host-keys.service /etc/systemd/system/ssh-host-keys.service
