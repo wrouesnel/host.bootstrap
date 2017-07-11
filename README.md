@@ -40,6 +40,13 @@ By passing `bootstrap_root_key` and `bootstrap_root_password` as PXE parameters
 the root key and root password can be set to unique (ephemeral) values each
 time.
 
+## Custom Live Booting
+By passing `NO_BOOTSTRAP=1` to to the `build.sh` script, the normal 
+`bootstrap.service` file won't be added, and the system will instead come up
+as a regular systemd multi-user.target running SSH. This system mode contains
+enough Python to run Ansible, so it's suitable for doing hardware-specific 
+things like configuring RAID adapters or pushing BIOS updates.
+
 # Motivation
 
 There's lots of projects oriented towards solving this problem, and none of them

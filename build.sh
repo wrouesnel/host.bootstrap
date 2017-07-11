@@ -138,11 +138,17 @@ bootstrap_make_symlink /lib/systemd/systemd /init
 #bootstrap_copy_file generate-machine-id.service /etc/systemd/system/generate-machine-id.service
 #bootstrap_make_symlink /etc/systemd/system/generate-machine-id.service /etc/systemd/system/sysinit.target.wants/generate-machine-id.service
 
-echo "Provisioning script"
-bootstrap_copy_file bootstrap /bootstrap
-bootstrap_copy_file bootstrap.service /etc/systemd/system/bootstrap.service
-bootstrap_make_dir /etc/systemd/system/initrd-root-device.target.wants
-bootstrap_make_symlink /etc/systemd/system/bootstrap.service /etc/systemd/system/initrd-root-device.target.wants/bootstrap.service
+if [ "$NO_BOOTSTRAP" != "1" ] ; then
+    echo "Provisioning script"
+    bootstrap_copy_file bootstrap /bootstrap
+    bootstrap_copy_file bootstrap.service /etc/systemd/system/bootstrap.service
+    bootstrap_make_dir /etc/systemd/system/initrd-root-device.target.wants
+    bootstrap_make_symlink /etc/systemd/system/bootstrap.service /etc/systemd/system/initrd-root-device.target.wants/bootstrap.service
+else
+    echo "Bootstrap script disabled. Copying SSH public key into initrd."
+    make_dir /root/.ssh
+    copy_file $HOME/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+fi
 
 copy_file ssh-host-keys.service /etc/systemd/system/ssh-host-keys.service
 make_dir /etc/systemd/system/ssh.service.wants
