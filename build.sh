@@ -156,6 +156,15 @@ copy_file $src/ssh-host-keys.service /etc/systemd/system/ssh-host-keys.service
 make_dir /etc/systemd/system/ssh.service.wants
 make_symlink /etc/systemd/system/ssh-host-keys.service /etc/systemd/system/ssh.service.wants/ssh-host-keys.service
 
+# Ensure network and SSH is available in the emergency shell.
+copy_file $src/emergency-ssh.service /etc/systemd/system/emergency-ssh.service
+make_dir /etc/systemd/system/emergency.target.wants
+make_symlink /etc/systemd/system/emergency-ssh.service /etc/systemd/system/emergency.target.wants/emergency-ssh.service
+
+make_dir /etc/systemd/system/network.target.wants
+make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/emergency.target.wants/systemd-networkd.service
+make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/emergency.target.wants/systemd-resolved.service
+
 echo "Copying cleanup directives"
 # Duplicate the copy so we actually incorporate the copy.
 tac $tmp/bootstrap_cleanup > $tmp/bootstrap_cleanup.real
@@ -173,6 +182,7 @@ move_file /etc/os-release /etc/initrd-release
 
 # Clear out /etc/machine-id (bootstrap will generate one).
 wipe_file /etc/machine-id
+wipe_file /var/lib/dbus/machine-id
 
 echo "Extracting kernel..."
 # Extract the kernel (there should only be 1)

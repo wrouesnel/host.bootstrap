@@ -11,4 +11,4 @@ Type=oneshot
 ExecStart=/usr/sbin/dpkg-reconfigure openssh-server
 
 [Install]
-WantedBy=ssh.service
+WantedBy=ssh.service emergency-ssh.service
