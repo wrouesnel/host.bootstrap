@@ -112,6 +112,11 @@ make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/mu
 make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/multi-user.target.wants/systemd-networkd.service
 make_symlink /lib/systemd/resolv.conf /etc/resolv.conf
 
+echo "Ensure polkit is up and running by the basic.target"
+make_dir /etc/systemd/system/basic.target.wants
+make_symlink /lib/systemd/system/polkit.service /etc/systemd/system/basic.target.wants/polkit.service
+make_symlink /lib/systemd/system/polkit.service /etc/systemd/system/basic.target.wants/dbus.service
+
 #echo "Getty autologin"
 #mkdir $root/etc/systemd/system/getty@tty1.service.d
 #cp autologin-tty.conf $root/etc/systemd/system/getty@tty1.service.d/autologin-tty.conf
@@ -130,11 +135,6 @@ copy_file $src/hosts /etc/hosts
 
 echo "Activate systemd in initrd"
 bootstrap_make_symlink /lib/systemd/systemd /init
-
-#echo "Machine ID set unit"
-#bootstrap_make_dir /etc/systemd/system/sysinit.target.wants
-#bootstrap_copy_file generate-machine-id.service /etc/systemd/system/generate-machine-id.service
-#bootstrap_make_symlink /etc/systemd/system/generate-machine-id.service /etc/systemd/system/sysinit.target.wants/generate-machine-id.service
 
 if [ "$NO_BOOTSTRAP" != "1" ] ; then
     echo "Provisioning script"
@@ -158,14 +158,14 @@ make_dir /etc/systemd/system/ssh.service.wants
 make_symlink /etc/systemd/system/ssh-host-keys.service /etc/systemd/system/ssh.service.wants/ssh-host-keys.service
 
 # Ensure network and SSH is available in the emergency shell.
-copy_file $src/emergency-ssh.service /etc/systemd/system/emergency-ssh.service
-make_dir /etc/systemd/system/emergency.target.wants
-make_symlink /etc/systemd/system/emergency-ssh.service /etc/systemd/system/emergency.target.wants/emergency-ssh.service
+#copy_file $src/emergency-ssh.service /etc/systemd/system/emergency-ssh.service
+#make_dir /etc/systemd/system/emergency.target.wants
+#make_symlink /etc/systemd/system/emergency-ssh.service /etc/systemd/system/emergency.target.wants/emergency-ssh.service
 
-make_dir /etc/systemd/system/network.target.wants
+#make_dir /etc/systemd/system/network.target.wants
 # This doesn't work at the moment - probably we need to force dbus into the
 # emergency target.
-make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/emergency.target.wants/systemd-networkd.service
+#make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/emergency.target.wants/systemd-networkd.service
 # This creates an ordering loop - emergency mode probably doesn't need advanced
 # DNS.
 #make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/emergency.target.wants/systemd-resolved.service
