@@ -81,7 +81,7 @@ PACKAGES=(
 # Clean up the old root
 [ -e "$root" ] && [ ! -z "$root" ] && rm -rf $root
 # Clean up the old boot
-[ -e "$boot" ] && [ ! -z "$boot" ] && rm -rf $boot
+[ -e "$boot" ] && [ ! -z "$boot" ] && rm -f $boot/vmlinuz $boot/initrd
 # Clean up old tmp
 [ -e "$tmp" ] && [ ! -z "$tmp" ] && rm -rf $tmp
 
