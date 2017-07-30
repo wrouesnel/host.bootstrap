@@ -59,6 +59,7 @@ PACKAGES=(
     systemd \
     systemd-sysv \
     dbus \
+    policykit-1 \
     login \
     rsync \
     procps \
@@ -162,8 +163,12 @@ make_dir /etc/systemd/system/emergency.target.wants
 make_symlink /etc/systemd/system/emergency-ssh.service /etc/systemd/system/emergency.target.wants/emergency-ssh.service
 
 make_dir /etc/systemd/system/network.target.wants
+# This doesn't work at the moment - probably we need to force dbus into the
+# emergency target.
 make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/emergency.target.wants/systemd-networkd.service
-make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/emergency.target.wants/systemd-resolved.service
+# This creates an ordering loop - emergency mode probably doesn't need advanced
+# DNS.
+#make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/emergency.target.wants/systemd-resolved.service
 
 echo "Copying cleanup directives"
 # Duplicate the copy so we actually incorporate the copy.

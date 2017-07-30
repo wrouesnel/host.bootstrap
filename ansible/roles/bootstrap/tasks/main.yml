@@ -1,5 +1,4 @@
 ---
-tasks:
 - name: configure apt
   copy:
     dest: /etc/apt/apt.conf

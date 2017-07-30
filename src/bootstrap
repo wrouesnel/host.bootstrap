@@ -69,9 +69,6 @@ log "Creating root filesystem"
 # TODO: replace with ZFS
 mkfs.ext4 ${target_device}2 || fatal 1 "Could not create root filesystem."
 
-log "Reload partition tables (2nd time)..."
-blockdev --rereadpt "${target_device}" || fatal 1 "Could not re-read partition tables."
-
 log "Reading the root UUID (note: set by filesystem, not GPT)"
 root_uuid=$(blkid -o value -s UUID "${target_device}2")
 
