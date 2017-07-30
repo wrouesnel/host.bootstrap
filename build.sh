@@ -112,11 +112,6 @@ make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/mu
 make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/multi-user.target.wants/systemd-networkd.service
 make_symlink /lib/systemd/resolv.conf /etc/resolv.conf
 
-echo "Ensure polkit is up and running by the basic.target"
-make_dir /etc/systemd/system/basic.target.wants
-make_symlink /lib/systemd/system/polkit.service /etc/systemd/system/basic.target.wants/polkit.service
-make_symlink /lib/systemd/system/polkit.service /etc/systemd/system/basic.target.wants/dbus.service
-
 #echo "Getty autologin"
 #mkdir $root/etc/systemd/system/getty@tty1.service.d
 #cp autologin-tty.conf $root/etc/systemd/system/getty@tty1.service.d/autologin-tty.conf
