@@ -3,7 +3,7 @@ Description=Bootstrap Callback SSH Proxy
 After=network.target
 
 [Service]
-ExecStart=/bin/bash -c "/usr/local/bin/callbackreverse --log-level=debug --server=http://will-desktop:8081/ --id=$(cat /sys/class/net/$(ip route | grep default | cut -d' ' -f5)/address) --connect=127.0.0.1:22 --forever"
+ExecStart=/bin/bash -c "/usr/local/bin/callbackreverse --log-level=debug --server=$(cat /proc/cmdline | tr ' ' '\n' | grep callbackserver | cut -d'=' -f2) --id=$(cat /sys/class/net/$(ip route | grep default | cut -d' ' -f5)/address) --connect=127.0.0.1:22 --forever"
 KillMode=process
 Restart=always
 RestartSec=10s
