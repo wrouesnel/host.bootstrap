@@ -13,5 +13,5 @@ echo "Building compressed initrd: $out_file"
 pwd="$(pwd)"
 cd "$source_dir" || exit 1
 # Command which builds the initramfs
-find . | cpio -H newc -o | gzip -c > "$pwd/$out_file" || exit 1
+find . | cpio -R root:root -H newc -o | gzip -c > "$pwd/$out_file" || exit 1
 cd "$pwd"
