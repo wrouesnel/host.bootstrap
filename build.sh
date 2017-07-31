@@ -2,7 +2,7 @@
 # Simple build script for a simple system
 
 if [ $EUID != 0 ]; then
-    exec sudo http_proxy=$http_proxy https_proxy=$https_proxy NO_BOOTSTRAP=$NO_BOOTSTRAP "$0" "$@"
+    exec sudo mirror="$mirror" http_proxy=$http_proxy https_proxy=$https_proxy NO_BOOTSTRAP=$NO_BOOTSTRAP "$0" "$@"
 fi
 
 . settings.sh
