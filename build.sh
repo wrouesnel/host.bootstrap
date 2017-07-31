@@ -140,6 +140,9 @@ if [ "$NO_BOOTSTRAP" != "1" ] ; then
     
     echo "Set default target..."
     bootstrap_make_symlink /lib/systemd/system/initrd.target /etc/systemd/system/default.target
+    
+    # Notify systemd it'll be initrd mode
+    move_file /etc/os-release /etc/initrd-release
 else
     echo "Bootstrap script disabled. Copying SSH public key into initrd."
     make_dir /root/.ssh
@@ -176,9 +179,6 @@ bootstrap_copy_file $tmp/bootstrap_cleanup.real /bootstrap_cleanup
 # Important - delete the SSH host keys so the bootstrapper sets them up.
 rm -rf $root/var/cache/apt/archives/*
 rm -f $root/etc/ssh/*_key rm -f $root/etc/ssh/*_key.pub
-
-# Notify systemd it'll be initrd mode
-move_file /etc/os-release /etc/initrd-release
 
 # Clear out /etc/machine-id (bootstrap will generate one).
 wipe_file /etc/machine-id
