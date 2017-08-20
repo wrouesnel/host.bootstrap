@@ -84,7 +84,10 @@ fi
 # Bootstrap root key is not optional.
 mkdir -p /root/.ssh || fatal 1 "Could not create root .ssh dir"
 chmod 755 /root/.ssh || fatal 1 "Could not set ownership on root .ssh dir"
-( echo "$bootstrap_root_key" | base64 -d > /root/.ssh/authorized_keys ) || fatal 1 "Failed decording bootstrap root key."
+if [ ! -z "${bootstrap_root_key}" ]; then
+    log "Copying initial root SSH key..."
+    ( echo "$bootstrap_root_key" | base64 -d > /root/.ssh/authorized_keys ) || fatal 1 "Failed decoding bootstrap root key."
+fi
 
 log "Copying bootstrap initramfs to root..."
 rsync -W -a -x --human-readable / /sysroot/ 2>&1 || fatal 1 "Failed copying OS to /sysroot"
