@@ -74,6 +74,8 @@ PACKAGES=(
     kexec-tools \
     python \
     apt-transport-https \
+    ca-certificates \
+    gnupg \
     openssh-server \
     grub-pc \
     linux-image-generic
