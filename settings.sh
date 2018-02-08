@@ -1,4 +1,4 @@
-SUITE=zesty
+SUITE=artful
 src=src
 root=root
 boot=boot
