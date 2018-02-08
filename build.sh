@@ -19,6 +19,10 @@ function bootstrap_make_dir() {
     echo "rmdir -v /sysroot/$1 || /bin/true" >> $tmp/bootstrap_cleanup
 }
 
+function touch_file() {
+    touch "$root/$1"
+}
+
 # move_file moves a file around within the context of the root
 function move_file() {
     mv -f "$root/$1" "$root/$2"
@@ -132,6 +136,9 @@ copy_file $src/hosts /etc/hosts
 
 echo "Activate systemd in initrd"
 bootstrap_make_symlink /lib/systemd/systemd /init
+
+echo "Ensure /etc/os-release exists"
+touch_file /etc/os-release
 
 if [ "$NO_BOOTSTRAP" != "1" ] ; then
     echo "Provisioning script"
