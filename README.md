@@ -40,6 +40,9 @@ By passing `bootstrap_root_key` and `bootstrap_root_password` as PXE parameters
 the root key and root password can be set to unique (ephemeral) values each
 time.
 
+`bootstrap_target_device` provides for some targeting of the device which is
+actually provisioned (it defaults to `/dev/sda`).
+
 ## Custom Live Booting
 By passing `NO_BOOTSTRAP=1` to to the `build.sh` script, the normal 
 `bootstrap.service` file won't be added, and the system will instead come up
