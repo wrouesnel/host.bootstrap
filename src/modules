@@ -1,0 +1,13 @@
+# /etc/modules: kernel modules to load at boot time.
+#
+# This file contains the names of kernel modules that should be loaded
+# at boot time, one per line. Lines beginning with "#" are ignored.
+
+# Some defaults so boot failures on real hardware don't leave broken systems.
+# USB drivers to let keyboards work in the emergency shell
+usbhid 
+usbcore 
+usb_common 
+hid
+hid_generic
+xhci_plat_hcd

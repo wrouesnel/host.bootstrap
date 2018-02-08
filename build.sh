@@ -2,7 +2,7 @@
 # Simple build script for a simple system
 
 if [ $EUID != 0 ]; then
-    exec sudo mirror="$mirror" http_proxy=$http_proxy https_proxy=$https_proxy NO_BOOTSTRAP=$NO_BOOTSTRAP "$0" "$@"
+    exec sudo mirror="$mirror" http_proxy=$http_proxy https_proxy=$https_proxy AUTOLOGIN=$AUTOLOGIN NO_BOOTSTRAP=$NO_BOOTSTRAP "$0" "$@"
 fi
 
 . settings.sh
@@ -62,6 +62,7 @@ PACKAGES=(
     coreutils \
     systemd \
     systemd-sysv \
+    udev \
     dbus \
     policykit-1 \
     login \
@@ -82,7 +83,8 @@ PACKAGES=(
     gnupg \
     openssh-server \
     grub-pc \
-    linux-image-generic
+    linux-image-generic \
+    linux-firmware \
 )
 
 # Clean up the old root
@@ -118,15 +120,23 @@ make_symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/mu
 make_symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/multi-user.target.wants/systemd-networkd.service
 make_symlink /lib/systemd/resolv.conf /etc/resolv.conf
 
-#echo "Getty autologin"
-#mkdir $root/etc/systemd/system/getty@tty1.service.d
-#cp autologin-tty.conf $root/etc/systemd/system/getty@tty1.service.d/autologin-tty.conf
+if [ "$AUTOLOGIN" = "1" ] ; then
+    echo "Getty autologin"
+    make_dir /etc/systemd/system/getty@tty1.service.d
+    copy_file $src/autologin-tty.conf /etc/systemd/system/getty@tty1.service.d/autologin-tty.conf
 
-#mkdir $root/etc/systemd/system/getty@ttyS0.service.d
-#cp autologin-serial.conf $root/etc/systemd/system/getty@ttyS0.service.d/autologin-serial.conf
+    make_dir /etc/systemd/system/getty@ttyS0.service.d
+    copy_file $src/autologin-serial.conf /etc/systemd/system/getty@ttyS0.service.d/autologin-serial.conf
 
-#mkdir $root/etc/systemd/system/getty@.service.d
-#cp getty-noclear.conf $root/etc/systemd/system/getty@.service.d/getty-noclear.conf
+    make_dir /etc/systemd/system/getty@.service.d
+    copy_file $src/getty-noclear.conf /etc/systemd/system/getty@.service.d/getty-noclear.conf
+
+    make_dir /etc/systemd/system/console-getty.service.d
+    copy_file $src/autologin-console-getty.conf /etc/systemd/system/console-getty.service.d/autologin-console-getty.conf
+fi
+
+echo "Copy bootstrap modules file.."
+copy_file $src/modules /etc/modules
 
 echo "Set hostname"
 echo "bootstrap" > $root/etc/hostname
@@ -136,9 +146,6 @@ copy_file $src/hosts /etc/hosts
 
 echo "Activate systemd in initrd"
 bootstrap_make_symlink /lib/systemd/systemd /init
-
-echo "Ensure /etc/os-release exists"
-touch_file /etc/os-release
 
 if [ "$NO_BOOTSTRAP" != "1" ] ; then
     echo "Provisioning script"

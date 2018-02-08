@@ -47,6 +47,10 @@ as a regular systemd multi-user.target running SSH. This system mode contains
 enough Python to run Ansible, so it's suitable for doing hardware-specific 
 things like configuring RAID adapters or pushing BIOS updates.
 
+The option `AUTOLOGIN=1` is also recognized, and enables automatic root login
+on all consoles. This is useful for debugging, but be aware it will be transferred
+to self-bootstrapped machines as well.
+
 # Motivation
 
 There's lots of projects oriented towards solving this problem, and none of them
