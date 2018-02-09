@@ -85,6 +85,12 @@ PACKAGES=(
     grub-pc \
     linux-image-generic \
     linux-firmware \
+    dmidecode \
+    bc \
+    dosfstools \
+    efibootmgr \
+    grub-efi-amd64-bin \
+    grub-efi-ia32-bin \
 )
 
 # Clean up the old root
