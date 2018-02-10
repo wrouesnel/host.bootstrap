@@ -91,6 +91,7 @@ PACKAGES=(
     efibootmgr \
     grub-efi-amd64-bin \
     grub-efi-ia32-bin \
+    initramfs-tools \
 )
 
 # Clean up the old root
