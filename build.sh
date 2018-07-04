@@ -154,6 +154,9 @@ copy_file $src/hosts /etc/hosts
 echo "Activate systemd in initrd"
 bootstrap_make_symlink /lib/systemd/systemd /init
 
+echo "Configure grub serial console"
+copy_file $src/default/grub /etc/default/grub
+
 if [ "$NO_BOOTSTRAP" != "1" ] ; then
     echo "Provisioning script"
     bootstrap_copy_file $src/bootstrap /bootstrap
