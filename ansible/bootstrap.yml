@@ -1,28 +1,129 @@
-- hosts: all
+- hosts: bootstrap
+  gather_facts: false
   become: true
-  roles:
-  - bootstrap
+  connection: local
   tasks:
-  - name: including normal site.yml
-    include: "{{ item }}"
-    with_first_found:
-    - files:
-      - "{{ playbook_dir }}/site.yml"
-      skip: true
+    - name: setup variables
+      set_fact:
+        output_dir: "{{image_dir}}/{{inventory_hostname}}"
+        working_dir: "{{build_dir}}/{{inventory_hostname}}"
 
-  - name: copy finalizer script
-    copy:
-      src: finalize.sh
-      dest: /root/finalize.sh
-      mode: 0700
-      owner: root
-      group: root
-    tags:
-    - bootstrap-finalize
+    - name: setup variables
+      set_fact:
+        working_image: "{{working_dir}}/{{inventory_hostname}}.qcow2"
+        output_image: "{{output_dir}}/{{inventory_hostname}}.qcow2"
+        chroot_dir: "{{working_dir}}/mnt"
 
-  - name: executing finalizer script
-    command: /root/finalize.sh
-    tags:
-    - bootstrap-finalize      
+    - name: initialize directories directory
+      file:
+        path: "{{item}}"
+        state: directory
+      loop:
+        - "{{output_dir}}"
+        - "{{working_dir}}"
 
+    - name: create a new bootstrap disk
+      command: qemu-img create -f qcow2 -o preallocation=off "{{working_image}}" "{{disk_size}}"
 
+    - name: ensure nbd is available
+      command: modprobe nbd
+
+    - block:
+        - name: connecting block device by qemu-nbd
+          qemu_nbd:
+            name: "{{working_image}}"
+            state: present
+          register: working_device_result
+
+        - name: setup variables
+          set_fact:
+            working_device: "{{working_device_result.device}}"
+
+        - name: setup standard partition scheme
+          command:
+            argv:
+            - sgdisk
+            - -o
+            - -n 1:0:1M
+            - -t 0:ef02
+            - -c 0:bios_boot
+            - -n 2:0:1G
+            - -t 0:ef00
+            - -c 0:efi
+            - -n 3:0:0
+            - -t 0:8300
+            - -c 0:root
+            - "{{working_device}}"
+        
+        - name: get new partition information
+          parted:
+            device: "{{working_device}}"
+            state: info
+          register: part_info
+
+        - name: map partitions to names
+          set_fact:
+            partitions: |
+              {%- set map = {} -%}
+              {%- for partition in part_info.partitions -%}
+                {%- do map.update({ partition.name : part_info.disk.dev + "p" + partition.num|string }) -%}
+              {%- endfor -%}
+              {{map|to_json}}
+        
+        - name: setup kpartx mapping for nbd partitions
+          block:
+          - kpartx:
+              name: "{{working_device}}"
+              state: present
+              
+          - name: create filesystems
+            filesystem:
+              fstype: vfat
+              dev: "{{partitions.efi}}"
+
+          - name: create filesystems
+            filesystem:
+              fstype: "{{filesystem}}"
+              dev: "{{partitions.root}}"
+              
+          always:
+          - kpartx:
+              name: "{{working_device}}"
+              state: absent
+
+      always:
+        - name: shutting down qemu nbd
+          qemu_nbd:
+            name: "{{working_image}}"
+            state: absent
+
+# - hosts: all
+#   become: true
+#   connection: chroot
+
+# - hosts: all
+#   become: true
+#   roles:
+#     - bootstrap
+#   tasks:
+#     - name: including normal site.yml
+#       include: "{{ item }}"
+#       with_first_found:
+#         - files:
+#             - "{{ playbook_dir }}/site.yml"
+#           skip: true
+
+#     - name: copy finalizer script
+#       copy:
+#         src: finalize.sh
+#         dest: /root/finalize.sh
+#         mode: 0700
+#         owner: root
+#         group: root
+#       tags:
+#         - bootstrap-finalize
+
+#     - name: executing finalizer script
+#       command: /root/finalize.sh
+#       tags:
+#         - bootstrap-finalize
