@@ -40,6 +40,7 @@ import subprocess
 import time
 import errno
 import signal
+import shlex
 from ansible.module_utils.basic import AnsibleModule
 
 # DEVMAPPER = "/dev/mapper"
@@ -81,13 +82,27 @@ if state == "present":
             continue
 
     # Loop until we succeed at mounting with an available nbd
+    cmd = []
     for device in available_nbds:
         try:
-            subprocess.check_call([QEMUNBD, "-f", format, "-c", device, name])
+            cmd = [
+                QEMUNBD,
+                "--discard=unmap",
+                "--detect-zeroes=unmap",
+                "--persistent",
+                "-f",
+                format,
+                "-c",
+                device,
+                name,
+            ]
+            subprocess.check_call(cmd)
         except subprocess.CalledProcessError:
             continue
         break
     result["device"] = device
+    result["command"] = cmd
+    result["shell_command"] = " ".join(cmd)
     result["changed"] = True
 
 elif state == "absent":

@@ -1,0 +1,7 @@
+ubuntu_suite: bionic
+
+bootstrap_roles:
+  - bootstrap
+
+chroot_roles:
+  - setup

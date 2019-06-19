@@ -13,6 +13,7 @@
         working_image: "{{working_dir}}/{{inventory_hostname}}.qcow2"
         output_image: "{{output_dir}}/{{inventory_hostname}}.qcow2"
         chroot_dir: "{{working_dir}}/mnt"
+        fstab_file: "{{working_dir}}/fstab"
 
     - name: initialize directories directory
       file:
@@ -21,6 +22,7 @@
       loop:
         - "{{output_dir}}"
         - "{{working_dir}}"
+        - "{{chroot_dir}}"
 
     - name: create a new bootstrap disk
       command: qemu-img create -f qcow2 -o preallocation=off "{{working_image}}" "{{disk_size}}"
@@ -54,42 +56,128 @@
             - -t 0:8300
             - -c 0:root
             - "{{working_device}}"
-        
-        - name: get new partition information
-          parted:
-            device: "{{working_device}}"
-            state: info
-          register: part_info
 
-        - name: map partitions to names
-          set_fact:
-            partitions: |
-              {%- set map = {} -%}
-              {%- for partition in part_info.partitions -%}
-                {%- do map.update({ partition.name : part_info.disk.dev + "p" + partition.num|string }) -%}
-              {%- endfor -%}
-              {{map|to_json}}
-        
-        - name: setup kpartx mapping for nbd partitions
+        - name: connect the nbd device to a loop device to break the exclusive lock
           block:
-          - kpartx:
-              name: "{{working_device}}"
-              state: present
-              
-          - name: create filesystems
-            filesystem:
-              fstype: vfat
-              dev: "{{partitions.efi}}"
+          - name: map loop device
+            command: losetup --show -f "{{working_device}}"
+            register: loop_setup
+          
+          - name: setup variables
+            set_fact:
+              working_loop_device: "{{loop_setup.stdout|trim}}"
 
-          - name: create filesystems
-            filesystem:
-              fstype: "{{filesystem}}"
-              dev: "{{partitions.root}}"
+          - name: map partitions off the loop devices
+            block:
+            - name: map partitions off the loop device
+              kpartx:
+                name: "{{working_loop_device}}"
+                state: present
+              register: kpart_partitions
+
+            - name: get new partition information
+              parted:
+                device: "{{working_loop_device}}"
+                state: info
+              register: part_info
+
+            - name: map partitions to names
+              set_fact:
+                partitions: |
+                  {%- set map = {} -%}
+                  {%- for partition in part_info.partitions -%}
+                    {%- do map.update({ partition.name : kpart_partitions.present[partition.num-1] }) -%}
+                  {%- endfor -%}
+                  {{map|to_json}}
+
+            - name: create filesystems for EFI partition
+              filesystem:
+                fstype: vfat
+                dev: "{{partitions.efi}}"
+
+            - name: create filesystems for root partition
+              filesystem:
+                fstype: "{{filesystem}}"
+                dev: "{{partitions.root}}"
+
+            - name: mount partitions to working directory
+              block:
+              - name: mount the root partition
+                mount:
+                  src: "{{partitions.root}}"
+                  path: "{{chroot_dir}}"
+                  opts: noatime,nodiratime
+                  state: mounted
+                  fstype: "{{filesystem}}"
+                  fstab: "{{fstab_file}}"
+
+              - name: create a boot/efi directory
+                file:
+                  path: "{{chroot_dir}}/boot/efi"
+                  state: directory
+
+              - name: mount the EFI partition
+                block:
+                - name: mount the EFI partition
+                  mount:
+                    src: "{{partitions.efi}}"
+                    path: "{{chroot_dir}}/boot/efi"
+                    state: mounted
+                    fstype: vfat
+                    fstab: "{{fstab_file}}"
+
+                # And so after all that, here we have a device we can provision on the host
+                - name: execute bootstrapping roles
+                  include_role:
+                    name: "{{item}}"
+                  loop: "{{bootstrap_roles}}"
+                
+                - block:
+                  - name: changing to chroot connection
+                    set_fact:
+                      old_connection: "{{ansible_connection}}"
+                      old_host: "{{ansible_host}}"
+
+                  - name: restoring connection type
+                    set_fact:
+                      ansible_connection: chroot
+                      ansible_host: "{{chroot_dir}}"
+
+                  - name: execute chroot bootstrap roles
+                    include_role:
+                      name: "{{item}}"
+                    loop: "{{chroot_roles}}"
+                  
+                  always:
+                  - name: restoring connection type
+                    set_fact:
+                      ansible_connection: "{{old_connection}}"
+                      ansible_host: "{{old_host}}"
+
+                always:
+                - name: unmount the EFI partition
+                  mount:
+                    path: "{{chroot_dir}}/boot/efi"
+                    state: unmounted
+                    fstab: "{{fstab_file}}"
               
+              always:
+              - name: unmount the root partition
+                mount:
+                  path: "{{chroot_dir}}"
+                  state: unmounted
+                  fstab: "{{fstab_file}}"
+
+            always:
+            - name: unmap the loop device partitions
+              kpartx:
+                name: "{{working_loop_device}}"
+                state: absent
+
           always:
-          - kpartx:
-              name: "{{working_device}}"
-              state: absent
+          - name: unmap partitions off the working device
+            command: losetup -d "{{working_loop_device}}"
+            when: working_loop_device is defined
 
       always:
         - name: shutting down qemu nbd

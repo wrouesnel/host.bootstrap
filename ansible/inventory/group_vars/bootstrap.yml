@@ -1,0 +1,10 @@
+# Directory to output disk images too
+image_dir: output
+# Working directory for in-progress images
+build_dir: build
+# Disk size of the provisioned image
+disk_size: 100G
+# Filesystem of the provisioned image (support xfs only at the moment)
+filesystem: xfs
+# Boot system of the provisioned image
+boot_system: uefi
