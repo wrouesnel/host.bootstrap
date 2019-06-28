@@ -127,7 +127,7 @@
                     fstab: "{{fstab_file}}"
 
                 # And so after all that, here we have a device we can provision on the host
-                - name: execute bootstrapping roles
+                - name: execute bootstrapping (copy files into the device) roles
                   include_role:
                     name: "{{item}}"
                   loop: "{{bootstrap_roles}}"
@@ -143,7 +143,7 @@
                       ansible_connection: chroot
                       ansible_host: "{{chroot_dir}}"
 
-                  - name: execute chroot bootstrap roles
+                  - name: execute chroot (run as a container) bootstrap roles
                     include_role:
                       name: "{{item}}"
                     loop: "{{chroot_roles}}"

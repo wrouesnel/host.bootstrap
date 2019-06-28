@@ -1,4 +1,4 @@
-/tmp
-/root
-/boot
-/root.password
+/.vscode
+/build
+/output
+

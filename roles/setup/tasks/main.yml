@@ -33,6 +33,7 @@
     - iproute2
     - kexec-tools
     - python
+    - python3
     - apt-transport-https
     - gnupg
     - openssh-server
