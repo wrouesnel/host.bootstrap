@@ -1,0 +1,6 @@
+- hosts: provision
+  gather_facts: false
+  become: true
+  connection: local
+  tasks:
+    - name:

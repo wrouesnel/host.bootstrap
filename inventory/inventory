@@ -1,2 +1,5 @@
 [bootstrap]
 ubuntu-bootstrap
+
+[provision]
+ubuntu-basic

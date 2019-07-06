@@ -1,0 +1,114 @@
+<domain type='kvm'>
+  <name>{{vm_name}}</name>
+  <memory unit='KiB'>{{provisioning_memory_mb * 1024}}</memory>
+  <vcpu placement='static'>1</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc-i440fx-zesty'>hvm</type>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cpu mode='host-model' check='partial'>
+    <model fallback='allow'/>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='rtc' tickpolicy='catchup'/>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='hpet' present='no'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <pm>
+    <suspend-to-mem enabled='no'/>
+    <suspend-to-disk enabled='no'/>
+  </pm>
+  <devices>
+    <emulator>/usr/bin/kvm-spice</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='{{provisioning_disk_location}}'/>
+      <target dev='vda' bus='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+    </disk>
+    <controller type='usb' index='0' model='ich9-ehci1'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x7'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci1'>
+      <master startport='0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0' multifunction='on'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci2'>
+      <master startport='2'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x1'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci3'>
+      <master startport='4'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x2'/>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'/>
+    <controller type='virtio-serial' index='0'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+    </controller>
+    <interface type='network'>
+      <mac address='{{"52:54:00" | random_mac}}'/>
+      <source network='default'/>
+      <model type='virtio'/>
+      <boot order='1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+    </interface>
+    <serial type='pty'>
+      <target type='isa-serial' port='0'>
+        <model name='isa-serial'/>
+      </target>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <channel type='spicevmc'>
+      <target type='virtio' name='com.redhat.spice.0'/>
+      <address type='virtio-serial' controller='0' bus='0' port='1'/>
+    </channel>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+      <address type='virtio-serial' controller='0' bus='0' port='2'/>
+    </channel>
+    <channel type='unix'>
+      <target type='virtio' name='org.libguestfs.channel.0'/>
+      <address type='virtio-serial' controller='0' bus='0' port='3'/>
+    </channel>
+    <channel type='spiceport'>
+      <source channel='org.spice-space.webdav.0'/>
+      <target type='virtio' name='org.spice-space.webdav.0'/>
+      <address type='virtio-serial' controller='0' bus='0' port='4'/>
+    </channel>
+    <input type='tablet' bus='usb'>
+      <address type='usb' bus='0' port='1'/>
+    </input>
+    <input type='mouse' bus='ps2'/>
+    <input type='keyboard' bus='ps2'/>
+    <graphics type='spice' autoport='yes'>
+      <listen type='address'/>
+      <image compression='off'/>
+    </graphics>
+    <video>
+      <model type='virtio' heads='1' primary='yes'>
+        <acceleration accel3d='yes'/>
+      </model>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </video>
+    <redirdev bus='usb' type='spicevmc'>
+      <address type='usb' bus='0' port='2'/>
+    </redirdev>
+    <redirdev bus='usb' type='spicevmc'>
+      <address type='usb' bus='0' port='3'/>
+    </redirdev>
+    <watchdog model='i6300esb' action='reset'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+    </watchdog>
+    <memballoon model='virtio'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+    </memballoon>
+  </devices>
+</domain>
