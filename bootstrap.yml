@@ -1,8 +1,22 @@
 - hosts: bootstrap
-  gather_facts: false
-  become: true
+  gather_facts: true
   connection: local
   tasks:
+    - name: ensure an SSH keypair for bootstrap environment
+      openssh_keypair:
+        path: "{{image_dir}}/root.id_rsa"
+        size: 2048
+
+    - name: ensure user ownership of keypairs
+      file:
+        path: "{{item}}"
+        owner: "{{ansible_env.SUDO_UID}}"
+        group: "{{ansible_env.SUDO_GID}}"
+        state: file
+      loop:
+      - "{{image_dir}}/root.id_rsa"
+      - "{{image_dir}}/root.id_rsa.pub"
+
     - name: setup variables
       set_fact:
         output_dir: "{{image_dir}}/{{inventory_hostname}}"
@@ -26,6 +40,13 @@
 
     - name: create a new bootstrap disk
       command: qemu-img create -f qcow2 -o preallocation=off "{{working_image}}" "{{disk_size}}"
+
+    - name: set the owner on the disk image to the sudo user
+      file:
+        path: "{{working_image}}"
+        owner: "{{ansible_env.SUDO_UID}}"
+        group: "{{ansible_env.SUDO_GID}}"
+        state: file
 
     - name: ensure nbd is available
       command: modprobe nbd
@@ -153,6 +174,7 @@
                     set_fact:
                       ansible_connection: "{{old_connection}}"
                       ansible_host: "{{old_host}}"
+                    connection: local
 
                 always:
                 - name: unmount the EFI partition
@@ -160,6 +182,7 @@
                     path: "{{chroot_dir}}/boot/efi"
                     state: unmounted
                     fstab: "{{fstab_file}}"
+                  connection: local
               
               always:
               - name: unmount the root partition
@@ -167,23 +190,30 @@
                   path: "{{chroot_dir}}"
                   state: unmounted
                   fstab: "{{fstab_file}}"
+                connection: local
 
             always:
             - name: unmap the loop device partitions
               kpartx:
                 name: "{{working_loop_device}}"
                 state: absent
+              connection: local
 
           always:
           - name: unmap partitions off the working device
             command: losetup -d "{{working_loop_device}}"
             when: working_loop_device is defined
+            connection: local
 
       always:
         - name: shutting down qemu nbd
           qemu_nbd:
             name: "{{working_image}}"
             state: absent
+          connection: local
+  
+    - name: copy built disk image to output directory
+      command: mv "{{working_image}}" "{{output_image}}"
 
 # - hosts: all
 #   become: true

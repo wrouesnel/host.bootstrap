@@ -2,5 +2,25 @@
   gather_facts: false
   become: true
   connection: local
+  vars:
+    libvirt_uri: libvirt_uri|default("qemu:///system",True)
   tasks:
-    - name:
+  - name: calculating provisioning VM values
+    set_fact:
+      launch_data:
+        build_host: "{{ ansible_hostname }}"
+        build_recipe: "{{ inventory_hostname }}" 
+        build_kernel:
+        build_initramfs:
+        base_image: 
+
+  - name: calculating provisioning VM values
+    set_fact:
+      # name in libvirt
+      vm_name: "{{ ansible_hostname }}-{{ inventory_hostname }}-{{ base_sha256 }}-{{ kernel_sha256 }}-{{ initramfs_sha256 }}"
+      vm_title: "{{inventory_hostname}}"
+      vm_description: "{{launch_data|to_nice_json}}"
+
+  - name: calculating provisioning VM values
+    set_fact:  
+      ovmf_vars_file: /var/lib/libvirt/qemu-nvram/{{vm_name}}_VARS.fd

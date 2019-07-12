@@ -1,9 +1,16 @@
 <domain type='kvm'>
   <name>{{vm_name}}</name>
+  <title>{{vm_title}}</title>
+  <description>{{vm_description}}</description>
   <memory unit='KiB'>{{provisioning_memory_mb * 1024}}</memory>
   <vcpu placement='static'>1</vcpu>
   <os>
     <type arch='x86_64' machine='pc-i440fx-zesty'>hvm</type>
+    <loader readonly='yes' type='pflash'>{{ovmf_code_template}}</loader>
+    <nvram>{{ovmf_vars_file}}</nvram>
+    <kernel>{{vm_kernel}}</kernel>
+    <initrd>{{vm_initrd}}</initrd>
+    <cmdline>{{vm_cmdline}}</cmdline>
   </os>
   <features>
     <acpi/>

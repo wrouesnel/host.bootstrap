@@ -1,0 +1,19 @@
+- name: finding the latest kernel
+  shell: find /boot -mindepth 1 -maxdepth 1 -type f | grep vmlinuz | sort | tail -n -1
+  register: kernel_find
+
+- name: finding the latest initramfs
+  shell: find /boot -mindepth 1 -maxdepth 1 -type f | grep initrd | sort | tail -n -1
+  register: initrd_find
+
+- name: copy the kernel
+  fetch:
+    src: "{{kernel_find.stdout|trim}}"
+    dest: "{{output_dir}}/{{kernel_find.stdout|trim|basename}}"
+    flat: true
+
+- name: copy the initrd
+  fetch:
+    src: "{{initrd_find.stdout|trim}}"
+    dest: "{{output_dir}}/{{initrd_find.stdout|trim|basename}}"
+    flat: true

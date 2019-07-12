@@ -1,4 +1,10 @@
 ---
+- name: install basic python dependencies
+  raw: apt update
+
+- name: install basic python dependencies
+  raw: apt install -y python python-apt python-setuptools python3 python3-apt python3-setuptools apt-transport-https
+
 - name: configure apt
   copy:
     dest: /etc/apt/apt.conf
@@ -9,10 +15,8 @@
       APT::Install-Suggests "0"; APT::Install-Recommends "0";
 
 - name: refresh bootstrap packages
-  package:
-    name: "{{item}}"
-    state: latest
-  with_items:
+  apt:
+    name:
     - sudo
     - e2fsprogs
     - gdisk
@@ -32,10 +36,67 @@
     - locales
     - iproute2
     - kexec-tools
-    - python
-    - python3
+    - python 
+    - python-apt 
+    - python-setuptools 
+    - python3 
+    - python3-apt 
+    - python3-setuptools 
     - apt-transport-https
     - gnupg
     - openssh-server
     - grub-pc
     - linux-image-generic
+    - wget
+    - curl
+    - ca-certificates
+    - dosfstools
+    - initramfs-tools
+    state: latest
+
+- name: install latest python pip
+  shell: curl -L {{get_pip_url}} | python3
+
+- name: install ansible
+  pip:
+    name: ansible==2.8
+
+- name: setup the .ssh directory for root
+  file:
+    path: /root/.ssh
+    owner: root
+    group: root
+    mode: '0755'
+    state: directory
+
+- name: setup root SSH key for further provisioning
+  copy:
+    src: "{{image_dir}}/root.id_rsa.pub"
+    dest: /root/.ssh/authorized_keys
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: setup an fstab file for the virtual hard disk
+  copy:
+    content: |
+      # /etc/fstab: static file system information.
+      #
+      # Use 'blkid' to print the universally unique identifier for a
+      # device; this may be used with UUID= as a more robust way to name devices
+      # that works even if disks are added and removed. See fstab(5).
+      #
+      # <file system> <mount point>   <type>  <options>       <dump>  <pass>
+      PARTLABEL=root  /               {{filesystem}}  noatime,discard,defaults  0   0
+      PARTLABEL=efi   /boot/efi       vfat            defaults                  0   0
+    dest: /etc/fstab
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: get installed kernel version
+  shell: find /boot -mindepth 1 -maxdepth 1 -type f | grep vmlinuz | sort | tail -n -1 | cut -d'-' -f2-
+  register: kernelversion_out
+
+- name: create an initramfs for the installed kernel
+  command: update-initramfs -c -k {{kernelversion_out.stdout|trim}}

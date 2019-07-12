@@ -8,3 +8,7 @@ disk_size: 100G
 filesystem: xfs
 # Boot system of the provisioned image
 boot_system: uefi
+
+# libvirt specific constants
+ovmf_code_template: /usr/share/OVMF/OVMF_CODE.fd
+ovmf_vars_template: /usr/share/OVMF/OVMF_VARS.fd

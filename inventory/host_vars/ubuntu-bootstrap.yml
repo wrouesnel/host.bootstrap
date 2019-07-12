@@ -5,3 +5,4 @@ bootstrap_roles:
 
 chroot_roles:
   - setup
+  - output/extract-boot
