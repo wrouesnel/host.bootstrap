@@ -1,8 +1,8 @@
 ubuntu_suite: bionic
 
 bootstrap_roles:
-  - bootstrap
+  - ubuntu/bootstrap
 
 chroot_roles:
-  - setup
+  - ubuntu/setup
   - output/extract-boot

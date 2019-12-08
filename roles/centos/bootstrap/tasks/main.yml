@@ -1,0 +1,86 @@
+---
+- name: create /sysroot/etc to install resolv.conf early
+  file:
+    path: "{{chroot_dir}}/etc"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+
+- name: copy bootstrap /etc/resolv.conf to target
+  copy:
+    remote_src: true
+    src: /etc/resolv.conf
+    dest: "{{chroot_dir}}/etc/resolv.conf"
+
+- name: check if /root/.rpmdb exists (is rpm initialized?)
+  stat:
+    path: "{{chroot_dir}}/root/.rpmdb"
+  register: rpmdb
+
+- name: initializing rpm db
+  command: rpm --root {{chroot_dir | realpath}} --initdb
+  when: rpmdb.stat.exists == False
+
+- name: copying the centos repository info
+  get_url:
+    url: "{{centos_sources.mirror}}/{{centos_sources.release}}/os/{{ansible_userspace_architecture}}/Packages/{{centos_sources.release_rpm}}"
+    dest: "{{chroot_dir}}/centos-release.rpm"
+
+  #when: pkgs_initialized.stat.exists == False
+- name: installing the root architecture
+  command: rpm -ivh --force-debian --nodeps --root {{chroot_dir | realpath}} {{chroot_dir}}/centos-release.rpm
+
+  #when: pkgs_initialized.stat.exists == False
+- name: clean up the initial centos-release rpm
+  file:
+    path: "{{chroot_dir}}/centos-release.rpm"
+    state: absent
+
+- name: set yum ARCH variable
+  copy:
+    dest: "{{chroot_dir}}/etc/yum/vars/arch"
+    owner: root
+    group: root
+    mode: 0644
+    content: "{{ansible_userspace_architecture}}"
+
+- name: set yum releasever variable
+  copy:
+    dest: "{{chroot_dir}}/etc/yum/vars/releasever"
+    owner: root
+    group: root
+    mode: 0644
+    content: "{{ centos_sources.release }}"
+
+- name: check if /usr/bin/yum exists (i.e. yum already installed)
+  stat:
+    path: "{{chroot_dir}}/usr/bin/yum"
+  register: yum_installed
+
+- name: find the repo files
+  find:
+    paths:
+      - "{{chroot_dir}}/etc/yum.repos.d/"
+    patterns:
+      - "*.repo"
+    file_type: file
+  register: repo_files
+
+- name: set the path to the GPG keys while we're running
+  replace:
+    path: "{{item.path}}"
+    regexp: ^gpgkey=file:\/\/(.*)
+    replace: gpgkey=file://{{chroot_dir | realpath}}\1
+  loop: "{{repo_files.files}}"
+
+- name: executing yum bootstrapping
+  command: yum --installroot {{chroot_dir | realpath}} install -y yum dnf
+  when: yum_installed.stat.exists == False or base_repos.changed == True
+
+- name: reset the path to the GPG keys while we're running
+  replace:
+    path: "{{item.path}}"
+    regexp: ^gpgkey=file:\/\/{{chroot_dir | realpath}}(.*)
+    replace: gpgkey=file://\1
+  loop: "{{repo_files.files}}"

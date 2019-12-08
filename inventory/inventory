@@ -1,5 +1,7 @@
 [bootstrap]
 ubuntu-bootstrap
+centos-bootstrap
 
 [provision]
 ubuntu-basic
+centos-basic

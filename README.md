@@ -22,3 +22,12 @@ Python:
 ```
 ansible==2.8
 ```
+
+# Usage
+
+Build an Ubuntu bootstrap base image:
+```
+sudo ansible-playbook -vv bootstrap.yml -l ubuntu-bootstrap
+```
+
+This sort of image needs to be booted used the libvirt direct boot feature to complete provisioning.

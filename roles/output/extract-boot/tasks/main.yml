@@ -9,11 +9,15 @@
 - name: copy the kernel
   fetch:
     src: "{{kernel_find.stdout|trim}}"
-    dest: "{{output_dir}}/{{kernel_find.stdout|trim|basename}}"
+    dest: "{{output_dir}}/vmlinuz"
+    owner: "{{ansible_env.SUDO_UID}}"
+    group: "{{ansible_env.SUDO_GID}}"
     flat: true
 
 - name: copy the initrd
   fetch:
     src: "{{initrd_find.stdout|trim}}"
-    dest: "{{output_dir}}/{{initrd_find.stdout|trim|basename}}"
+    dest: "{{output_dir}}/initrd"
+    owner: "{{ansible_env.SUDO_UID}}"
+    group: "{{ansible_env.SUDO_GID}}"
     flat: true

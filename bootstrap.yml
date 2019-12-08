@@ -14,8 +14,8 @@
         group: "{{ansible_env.SUDO_GID}}"
         state: file
       loop:
-      - "{{image_dir}}/root.id_rsa"
-      - "{{image_dir}}/root.id_rsa.pub"
+        - "{{image_dir}}/root.id_rsa"
+        - "{{image_dir}}/root.id_rsa.pub"
 
     - name: setup variables
       set_fact:
@@ -65,145 +65,145 @@
         - name: setup standard partition scheme
           command:
             argv:
-            - sgdisk
-            - -o
-            - -n 1:0:1M
-            - -t 0:ef02
-            - -c 0:bios_boot
-            - -n 2:0:1G
-            - -t 0:ef00
-            - -c 0:efi
-            - -n 3:0:0
-            - -t 0:8300
-            - -c 0:root
-            - "{{working_device}}"
+              - sgdisk
+              - -o
+              - -n 1:0:1M
+              - -t 0:ef02
+              - -c 0:bios_boot
+              - -n 2:0:1G
+              - -t 0:ef00
+              - -c 0:efi
+              - -n 3:0:0
+              - -t 0:8300
+              - -c 0:root
+              - "{{working_device}}"
 
         - name: connect the nbd device to a loop device to break the exclusive lock
           block:
-          - name: map loop device
-            command: losetup --show -f "{{working_device}}"
-            register: loop_setup
-          
-          - name: setup variables
-            set_fact:
-              working_loop_device: "{{loop_setup.stdout|trim}}"
+            - name: map loop device
+              command: losetup --show -f "{{working_device}}"
+              register: loop_setup
 
-          - name: map partitions off the loop devices
-            block:
-            - name: map partitions off the loop device
-              kpartx:
-                name: "{{working_loop_device}}"
-                state: present
-              register: kpart_partitions
-
-            - name: get new partition information
-              parted:
-                device: "{{working_loop_device}}"
-                state: info
-              register: part_info
-
-            - name: map partitions to names
+            - name: setup variables
               set_fact:
-                partitions: |
-                  {%- set map = {} -%}
-                  {%- for partition in part_info.partitions -%}
-                    {%- do map.update({ partition.name : kpart_partitions.present[partition.num-1] }) -%}
-                  {%- endfor -%}
-                  {{map|to_json}}
+                working_loop_device: "{{loop_setup.stdout|trim}}"
 
-            - name: create filesystems for EFI partition
-              filesystem:
-                fstype: vfat
-                dev: "{{partitions.efi}}"
-
-            - name: create filesystems for root partition
-              filesystem:
-                fstype: "{{filesystem}}"
-                dev: "{{partitions.root}}"
-
-            - name: mount partitions to working directory
+            - name: map partitions off the loop devices
               block:
-              - name: mount the root partition
-                mount:
-                  src: "{{partitions.root}}"
-                  path: "{{chroot_dir}}"
-                  opts: noatime,nodiratime
-                  state: mounted
-                  fstype: "{{filesystem}}"
-                  fstab: "{{fstab_file}}"
+                - name: map partitions off the loop device
+                  kpartx:
+                    name: "{{working_loop_device}}"
+                    state: present
+                  register: kpart_partitions
 
-              - name: create a boot/efi directory
-                file:
-                  path: "{{chroot_dir}}/boot/efi"
-                  state: directory
+                - name: get new partition information
+                  parted:
+                    device: "{{working_loop_device}}"
+                    state: info
+                  register: part_info
 
-              - name: mount the EFI partition
-                block:
-                - name: mount the EFI partition
-                  mount:
-                    src: "{{partitions.efi}}"
-                    path: "{{chroot_dir}}/boot/efi"
-                    state: mounted
+                - name: map partitions to names
+                  set_fact:
+                    partitions: |
+                      {%- set map = {} -%}
+                      {%- for partition in part_info.partitions -%}
+                        {%- do map.update({ partition.name : kpart_partitions.present[partition.num-1] }) -%}
+                      {%- endfor -%}
+                      {{map|to_json}}
+
+                - name: create filesystems for EFI partition
+                  filesystem:
                     fstype: vfat
-                    fstab: "{{fstab_file}}"
+                    dev: "{{partitions.efi}}"
 
-                # And so after all that, here we have a device we can provision on the host
-                - name: execute bootstrapping (copy files into the device) roles
-                  include_role:
-                    name: "{{item}}"
-                  loop: "{{bootstrap_roles}}"
-                
-                - block:
-                  - name: changing to chroot connection
-                    set_fact:
-                      old_connection: "{{ansible_connection}}"
-                      old_host: "{{ansible_host}}"
+                - name: create filesystems for root partition
+                  filesystem:
+                    fstype: "{{filesystem}}"
+                    dev: "{{partitions.root}}"
 
-                  - name: restoring connection type
-                    set_fact:
-                      ansible_connection: chroot
-                      ansible_host: "{{chroot_dir}}"
+                - name: mount partitions to working directory
+                  block:
+                    - name: mount the root partition
+                      mount:
+                        src: "{{partitions.root}}"
+                        path: "{{chroot_dir}}"
+                        opts: noatime,nodiratime
+                        state: mounted
+                        fstype: "{{filesystem}}"
+                        fstab: "{{fstab_file}}"
 
-                  - name: execute chroot (run as a container) bootstrap roles
-                    include_role:
-                      name: "{{item}}"
-                    loop: "{{chroot_roles}}"
-                  
+                    - name: create a boot/efi directory
+                      file:
+                        path: "{{chroot_dir}}/boot/efi"
+                        state: directory
+
+                    - name: mount the EFI partition
+                      block:
+                        - name: mount the EFI partition
+                          mount:
+                            src: "{{partitions.efi}}"
+                            path: "{{chroot_dir}}/boot/efi"
+                            state: mounted
+                            fstype: vfat
+                            fstab: "{{fstab_file}}"
+
+                        # And so after all that, here we have a device we can provision on the host
+                        - name: execute bootstrapping (copy files into the device) roles
+                          include_role:
+                            name: "{{item}}"
+                          loop: "{{bootstrap_roles}}"
+
+                        - block:
+                            - name: changing to chroot connection
+                              set_fact:
+                                old_connection: "{{ansible_connection}}"
+                                old_host: "{{ansible_host}}"
+
+                            - name: restoring connection type
+                              set_fact:
+                                ansible_connection: chroot
+                                ansible_host: "{{chroot_dir}}"
+
+                            - name: execute chroot (run as a container) bootstrap roles
+                              include_role:
+                                name: "{{item}}"
+                              loop: "{{chroot_roles}}"
+
+                          always:
+                            - name: restoring connection type
+                              set_fact:
+                                ansible_connection: "{{old_connection}}"
+                                ansible_host: "{{old_host}}"
+                              connection: local
+
+                      always:
+                        - name: unmount the EFI partition
+                          mount:
+                            path: "{{chroot_dir}}/boot/efi"
+                            state: unmounted
+                            fstab: "{{fstab_file}}"
+                          connection: local
+
                   always:
-                  - name: restoring connection type
-                    set_fact:
-                      ansible_connection: "{{old_connection}}"
-                      ansible_host: "{{old_host}}"
-                    connection: local
+                    - name: unmount the root partition
+                      mount:
+                        path: "{{chroot_dir}}"
+                        state: unmounted
+                        fstab: "{{fstab_file}}"
+                      connection: local
 
-                always:
-                - name: unmount the EFI partition
-                  mount:
-                    path: "{{chroot_dir}}/boot/efi"
-                    state: unmounted
-                    fstab: "{{fstab_file}}"
-                  connection: local
-              
               always:
-              - name: unmount the root partition
-                mount:
-                  path: "{{chroot_dir}}"
-                  state: unmounted
-                  fstab: "{{fstab_file}}"
-                connection: local
-
-            always:
-            - name: unmap the loop device partitions
-              kpartx:
-                name: "{{working_loop_device}}"
-                state: absent
-              connection: local
+                - name: unmap the loop device partitions
+                  kpartx:
+                    name: "{{working_loop_device}}"
+                    state: absent
+                  connection: local
 
           always:
-          - name: unmap partitions off the working device
-            command: losetup -d "{{working_loop_device}}"
-            when: working_loop_device is defined
-            connection: local
+            - name: unmap partitions off the working device
+              command: losetup -d "{{working_loop_device}}"
+              when: working_loop_device is defined
+              connection: local
 
       always:
         - name: shutting down qemu nbd
@@ -211,10 +211,9 @@
             name: "{{working_image}}"
             state: absent
           connection: local
-  
+
     - name: copy built disk image to output directory
       command: mv "{{working_image}}" "{{output_image}}"
-
 # - hosts: all
 #   become: true
 #   connection: chroot

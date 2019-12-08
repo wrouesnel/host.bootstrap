@@ -1,0 +1,112 @@
+---
+- name: installing base system
+  yum:
+    name:
+      - yum
+      - centos-release
+      - setup
+      - basesystem
+      - filesystem
+      - bash
+      - nano
+      - ca-certificates
+      - openssh-server
+      - libselinux-python
+      - kernel
+      - gdisk
+      # - fdisk
+      - nano
+      - e2fsprogs
+      - xfsprogs
+      - dhclient
+      - sg3_utils
+      - pciutils
+      - grub2
+      - python
+      - rsync
+    state: latest
+
+- name: refresh bootstrap packages
+  yum:
+    name:
+      - sudo
+      - e2fsprogs
+      - gdisk
+      - coreutils
+      - systemd
+      - systemd-sysv
+      - dbus
+      - login
+      - rsync
+      - procps
+      - mount
+      - less
+      - grep
+      - sed
+      - nano
+      - util-linux
+      - locales
+      - iproute2
+      - kexec-tools
+      - python
+      - python-setuptools
+      - python3
+      - python3-setuptools
+      - gnupg
+      - openssh-server
+      - grub-pc
+      - kernel
+      - kernel-headers
+      - wget
+      - curl
+      - ca-certificates
+      - dosfstools
+      - dracut
+    state: latest
+
+- name: install latest python pip
+  shell: curl -L {{get_pip_url}} | python3
+
+- name: install ansible
+  pip:
+    name: ansible==2.8
+
+- name: setup the .ssh directory for root
+  file:
+    path: /root/.ssh
+    owner: root
+    group: root
+    mode: "0755"
+    state: directory
+
+- name: setup root SSH key for further provisioning
+  copy:
+    src: "{{image_dir}}/root.id_rsa.pub"
+    dest: /root/.ssh/authorized_keys
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: setup an fstab file for the virtual hard disk
+  copy:
+    content: |
+      # /etc/fstab: static file system information.
+      #
+      # Use 'blkid' to print the universally unique identifier for a
+      # device; this may be used with UUID= as a more robust way to name devices
+      # that works even if disks are added and removed. See fstab(5).
+      #
+      # <file system> <mount point>   <type>  <options>       <dump>  <pass>
+      PARTLABEL=root  /               {{filesystem}}  noatime,discard,defaults  0   0
+      PARTLABEL=efi   /boot/efi       vfat            defaults                  0   0
+    dest: /etc/fstab
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: get installed kernel version
+  shell: find /boot -mindepth 1 -maxdepth 1 -type f | grep vmlinuz | sort | tail -n -1 | cut -d'-' -f2-
+  register: kernelversion_out
+
+- name: regenerate initramfs with dracut
+  command: dracut --force /boot/initramfs-{{kernelversion_out.stdout|trim}}.img {{kernelversion_out.stdout|trim}}

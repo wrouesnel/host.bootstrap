@@ -1,0 +1,11 @@
+bootstrap_roles:
+  - centos/bootstrap
+
+chroot_roles:
+  - centos/setup
+  - output/extract-boot
+
+centos_sources:
+  mirror: http://mirror.centos.org/centos/
+  release: "7"
+  release_rpm: centos-release-7-7.1908.0.el7.centos.x86_64.rpm
