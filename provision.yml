@@ -5,22 +5,49 @@
   vars:
     libvirt_uri: libvirt_uri|default("qemu:///system",True)
   tasks:
-  - name: calculating provisioning VM values
-    set_fact:
-      launch_data:
-        build_host: "{{ ansible_hostname }}"
-        build_recipe: "{{ inventory_hostname }}" 
-        build_kernel:
-        build_initramfs:
-        base_image: 
+    - name: calculating provisioning VM values
+      set_fact:
+        launch_data:
+          build_host: "{{ ansible_hostname }}"
+          build_recipe: "{{ inventory_hostname }}"
+          build_kernel: "{{ image_dir }}/{{ inventory_hostname }}/vmlinuz"
+          build_initramfs: "{{ image_dir }}/{{ inventory_hostname }}/initrd"
+          base_image: "{{ image_dir }}/{{ inventory_hostname }}.qcow2"
 
-  - name: calculating provisioning VM values
-    set_fact:
-      # name in libvirt
-      vm_name: "{{ ansible_hostname }}-{{ inventory_hostname }}-{{ base_sha256 }}-{{ kernel_sha256 }}-{{ initramfs_sha256 }}"
-      vm_title: "{{inventory_hostname}}"
-      vm_description: "{{launch_data|to_nice_json}}"
+    - name: calculate image hash
+      stat:
+        path: "{{base_image}}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: image_hash
 
-  - name: calculating provisioning VM values
-    set_fact:  
-      ovmf_vars_file: /var/lib/libvirt/qemu-nvram/{{vm_name}}_VARS.fd
+    - name: calculate kernel hash
+      stat:
+        path: "{{build_kernel}}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: kernel_hash
+
+    - name: calculate initrd hash
+      stat:
+        path: "{{build_initramfs}}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: initramfs_hash
+
+    - name: set hash parameters
+      set_fact:
+        base_sha256: "{{ image_hash.stat.checksum }}"
+        kernel_sha256: "{{ kernel_hash.stat.checksum }}"
+        initramfs_sha256: "{{ initramfs_hash.stat.checksum }}"
+
+    - name: calculating provisioning VM values
+      set_fact:
+        # name in libvirt
+        vm_name: "{{ ansible_hostname }}-{{ inventory_hostname }}-{{ base_sha256 }}-{{ kernel_sha256 }}-{{ initramfs_sha256 }}"
+        vm_title: "{{inventory_hostname}}"
+        vm_description: "{{launch_data|to_nice_yaml}}"
+
+    - name: calculating provisioning VM values
+      set_fact:
+        ovmf_vars_file: /var/lib/libvirt/qemu-nvram/{{vm_name}}_VARS.fd

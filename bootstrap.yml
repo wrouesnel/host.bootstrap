@@ -6,7 +6,7 @@
       file:
         name: "{{image_dir}}"
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: ensure an SSH keypair for bootstrap environment
       openssh_keypair:
@@ -173,41 +173,41 @@
                         fstype: vfat
                         fstab: "{{fstab_file}}"
 
-#                    - name: mount /proc
-#                      mount:
-#                        src: "/proc"
-#                        path: "{{chroot_dir}}/proc"
-#                        state: mounted
-#                        opts: bind
-#                        fstype: none
-#                        fstab: "{{fstab_file}}"
-#
-#                    - name: mount /sys
-#                      mount:
-#                        src: "/sys"
-#                        path: "{{chroot_dir}}/sys"
-#                        state: mounted
-#                        opts: bind
-#                        fstype: none
-#                        fstab: "{{fstab_file}}"
-#
-#                    - name: mount /dev
-#                      mount:
-#                        src: "/dev"
-#                        path: "{{chroot_dir}}/dev"
-#                        state: mounted
-#                        opts: bind
-#                        fstype: none
-#                        fstab: "{{fstab_file}}"
-#
-#                    - name: mount /dev/pts
-#                      mount:
-#                        src: "/dev/pts"
-#                        path: "{{chroot_dir}}/dev/pts"
-#                        state: mounted
-#                        opts: bind
-#                        fstype: none
-#                        fstab: "{{fstab_file}}"
+                    - name: mount /proc
+                      mount:
+                        src: "/proc"
+                        path: "{{chroot_dir}}/proc"
+                        state: mounted
+                        opts: bind
+                        fstype: none
+                        fstab: "{{fstab_file}}"
+
+                    - name: mount /sys
+                      mount:
+                        src: "/sys"
+                        path: "{{chroot_dir}}/sys"
+                        state: mounted
+                        opts: bind
+                        fstype: none
+                        fstab: "{{fstab_file}}"
+
+                    - name: mount /dev
+                      mount:
+                        src: "/dev"
+                        path: "{{chroot_dir}}/dev"
+                        state: mounted
+                        opts: bind
+                        fstype: none
+                        fstab: "{{fstab_file}}"
+
+                    - name: mount /dev/pts
+                      mount:
+                        src: "/dev/pts"
+                        path: "{{chroot_dir}}/dev/pts"
+                        state: mounted
+                        opts: bind
+                        fstype: none
+                        fstab: "{{fstab_file}}"
 
                     - name: block to ensure bootstrapping runs with become
                       block:
@@ -241,33 +241,33 @@
                             ansible_host: "{{old_host}}"
                           connection: local
                   always:
-#                    - name: unmount /dev/pts
-#                      mount:
-#                        path: "{{chroot_dir}}/dev/pts"
-#                        state: unmounted
-#                        fstab: "{{fstab_file}}"
-#                      ignore_errors: true
-#
-#                    - name: unmount /dev
-#                      mount:
-#                        path: "{{chroot_dir}}/dev"
-#                        state: unmounted
-#                        fstab: "{{fstab_file}}"
-#                      ignore_errors: true
-#
-#                    - name: unmount /sys
-#                      mount:
-#                        path: "{{chroot_dir}}/sys"
-#                        state: unmounted
-#                        fstab: "{{fstab_file}}"
-#                      ignore_errors: true
-#
-#                    - name: unmount /proc
-#                      mount:
-#                        path: "{{chroot_dir}}/proc"
-#                        state: unmounted
-#                        fstab: "{{fstab_file}}"
-#                      ignore_errors: true
+                    - name: unmount /dev/pts
+                      mount:
+                        path: "{{chroot_dir}}/dev/pts"
+                        state: unmounted
+                        fstab: "{{fstab_file}}"
+                      ignore_errors: true
+
+                    - name: unmount /dev
+                      mount:
+                        path: "{{chroot_dir}}/dev"
+                        state: unmounted
+                        fstab: "{{fstab_file}}"
+                      ignore_errors: true
+
+                    - name: unmount /sys
+                      mount:
+                        path: "{{chroot_dir}}/sys"
+                        state: unmounted
+                        fstab: "{{fstab_file}}"
+                      ignore_errors: true
+
+                    - name: unmount /proc
+                      mount:
+                        path: "{{chroot_dir}}/proc"
+                        state: unmounted
+                        fstab: "{{fstab_file}}"
+                      ignore_errors: true
 
                     - name: unmount the EFI partition
                       mount:

@@ -4,7 +4,7 @@
     path: "{{chroot_dir}}/etc"
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
     state: directory
 
 - name: copy bootstrap /etc/resolv.conf to target
@@ -44,7 +44,7 @@
     dest: "{{chroot_dir}}/etc/yum/vars/arch"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
     content: "{{ansible_userspace_architecture}}"
 
 - name: set yum releasever variable
@@ -52,7 +52,7 @@
     dest: "{{chroot_dir}}/etc/yum/vars/releasever"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
     content: "{{ centos_sources.release }}"
 
 - name: check if /usr/bin/yum exists (i.e. yum already installed)

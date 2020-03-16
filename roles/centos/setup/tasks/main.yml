@@ -1,7 +1,10 @@
 ---
 - name: installing base system
-  yum:
-    name:
+  command:
+    argv:
+      - yum
+      - install
+      - "-y"
       - yum
       - centos-release
       - setup
@@ -24,11 +27,13 @@
       - grub2
       - python
       - rsync
-    state: latest
 
 - name: refresh bootstrap packages
-  yum:
-    name:
+  command:
+    argv:
+      - yum
+      - install
+      - "-y"
       - sudo
       - e2fsprogs
       - gdisk
@@ -62,14 +67,13 @@
       - ca-certificates
       - dosfstools
       - dracut
-    state: latest
 
 - name: install latest python pip
   shell: curl -L {{get_pip_url}} | python3
 
 - name: install ansible
   pip:
-    name: ansible==2.8
+    name: ansible==2.9
 
 - name: setup the .ssh directory for root
   file:
@@ -105,8 +109,18 @@
     mode: "0644"
 
 - name: get installed kernel version
-  shell: find /boot -mindepth 1 -maxdepth 1 -type f | grep vmlinuz | sort | tail -n -1 | cut -d'-' -f2-
+  shell: >-
+    find /boot -mindepth 1 -maxdepth 1 -type f -printf "%f\n" |
+    grep ^vmlinuz |
+    grep -v hmac |
+    sort |
+    tail -n -1 |
+    cut -d'-' -f2-
   register: kernelversion_out
 
 - name: regenerate initramfs with dracut
-  command: dracut --force /boot/initramfs-{{kernelversion_out.stdout|trim}}.img {{kernelversion_out.stdout|trim}}
+  command: >-
+    dracut 
+    --force 
+    /boot/initramfs-{{kernelversion_out.stdout|trim}}.img 
+    {{kernelversion_out.stdout|trim}}

@@ -1,22 +1,32 @@
 - name: finding the latest kernel
-  shell: find /boot -mindepth 1 -maxdepth 1 -type f | grep vmlinuz | sort | tail -n -1
+  shell: >-
+    find /boot -mindepth 1 -maxdepth 1 -type f -printf "%f\n" | 
+    grep ^vmlinuz | 
+    grep -v hmac | 
+    sort | 
+    tail -n -1
   register: kernel_find
 
 - name: finding the latest initramfs
-  shell: find /boot -mindepth 1 -maxdepth 1 -type f | grep initrd | sort | tail -n -1
+  shell: >-
+    find /boot -mindepth 1 -maxdepth 1 -type f -printf "%f\n" | 
+    grep ^init | 
+    grep -v hmac | 
+    sort | 
+    tail -n -1
   register: initrd_find
 
 - name: copy the kernel
   fetch:
-    src: "{{kernel_find.stdout|trim}}"
+    src: "/boot/{{kernel_find.stdout|trim}}"
     dest: "{{output_dir}}/vmlinuz"
     owner: "{{ansible_env.SUDO_UID}}"
     group: "{{ansible_env.SUDO_GID}}"
     flat: true
 
-- name: copy the initrd
+- name: copy the initramfs
   fetch:
-    src: "{{initrd_find.stdout|trim}}"
+    src: "/boot/{{initrd_find.stdout|trim}}"
     dest: "{{output_dir}}/initrd"
     owner: "{{ansible_env.SUDO_UID}}"
     group: "{{ansible_env.SUDO_GID}}"
