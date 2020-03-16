@@ -2,6 +2,12 @@
   gather_facts: true
   connection: local
   tasks:
+    - name: ensure image dir
+      file:
+        name: "{{image_dir}}"
+        state: directory
+        mode: '0755'
+
     - name: ensure an SSH keypair for bootstrap environment
       openssh_keypair:
         path: "{{image_dir}}/root.id_rsa"
@@ -16,6 +22,7 @@
       loop:
         - "{{image_dir}}/root.id_rsa"
         - "{{image_dir}}/root.id_rsa.pub"
+      when: '"SUDO_UID" in ansible_env'
 
     - name: setup variables
       set_fact:
@@ -47,6 +54,7 @@
         owner: "{{ansible_env.SUDO_UID}}"
         group: "{{ansible_env.SUDO_GID}}"
         state: file
+      when: '"SUDO_UID" in ansible_env'
 
     - name: ensure nbd is available
       command: modprobe nbd
@@ -147,13 +155,16 @@
                             fstype: vfat
                             fstab: "{{fstab_file}}"
 
-                        # And so after all that, here we have a device we can provision on the host
-                        - name: execute bootstrapping (copy files into the device) roles
-                          include_role:
-                            name: "{{item}}"
-                          loop: "{{bootstrap_roles}}"
+                        - name: block to ensure bootstrapping runs with become
+                          block:
+                            # And so after all that, here we have a device we can provision on the host
+                            - name: execute bootstrapping (copy files into the device) roles
+                              include_role:
+                                name: "{{item}}"
+                              loop: "{{bootstrap_roles}}"
 
-                        - block:
+                        - name: execute second phase provisioning with chroot
+                          block:
                             - name: changing to chroot connection
                               set_fact:
                                 old_connection: "{{ansible_connection}}"
@@ -214,33 +225,3 @@
 
     - name: copy built disk image to output directory
       command: mv "{{working_image}}" "{{output_image}}"
-# - hosts: all
-#   become: true
-#   connection: chroot
-
-# - hosts: all
-#   become: true
-#   roles:
-#     - bootstrap
-#   tasks:
-#     - name: including normal site.yml
-#       include: "{{ item }}"
-#       with_first_found:
-#         - files:
-#             - "{{ playbook_dir }}/site.yml"
-#           skip: true
-
-#     - name: copy finalizer script
-#       copy:
-#         src: finalize.sh
-#         dest: /root/finalize.sh
-#         mode: 0700
-#         owner: root
-#         group: root
-#       tags:
-#         - bootstrap-finalize
-
-#     - name: executing finalizer script
-#       command: /root/finalize.sh
-#       tags:
-#         - bootstrap-finalize

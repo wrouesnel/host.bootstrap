@@ -29,7 +29,9 @@
 
   #when: pkgs_initialized.stat.exists == False
 - name: installing the root architecture
-  command: rpm -ivh --force-debian --nodeps --root {{chroot_dir | realpath}} {{chroot_dir}}/centos-release.rpm
+  command: |
+    rpm -ivh {% if ansible_distribution_file_variety|lower != "redhat" %}--force-debian{% endif %} 
+    --nodeps --root {{chroot_dir | realpath}} {{chroot_dir}}/centos-release.rpm
 
   #when: pkgs_initialized.stat.exists == False
 - name: clean up the initial centos-release rpm
@@ -75,7 +77,7 @@
   loop: "{{repo_files.files}}"
 
 - name: executing yum bootstrapping
-  command: yum --installroot {{chroot_dir | realpath}} install -y yum dnf
+  command: yum --installroot={{chroot_dir | realpath}} install -y yum
   when: yum_installed.stat.exists == False or base_repos.changed == True
 
 - name: reset the path to the GPG keys while we're running

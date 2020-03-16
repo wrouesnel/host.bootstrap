@@ -116,8 +116,7 @@ if state == "present":
             success = True
             break
         except subprocess.CalledProcessError as ex:
-            print(ex.stdout, ex.output)
-            last_error = ex.stdout.read()
+            last_error = ex.output
 
     if not success:
         module.fail_json(msg="qemu-nbd failed to bind to any available device", 
