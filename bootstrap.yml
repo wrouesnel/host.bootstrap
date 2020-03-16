@@ -129,6 +129,26 @@
                     fstype: "{{filesystem}}"
                     dev: "{{partitions.root}}"
 
+                - name: create /proc
+                  file:
+                    path: "{{chroot_dir}}/proc"
+                    state: directory
+
+                - name: create /sys
+                  file:
+                    path: "{{chroot_dir}}/sys"
+                    state: directory
+
+                - name: create /dev
+                  file:
+                    path: "{{chroot_dir}}/dev"
+                    state: directory
+
+                - name: create /dev/pts
+                  file:
+                    path: "{{chroot_dir}}/dev/pts"
+                    state: directory
+
                 - name: mount partitions to working directory
                   block:
                     - name: mount the root partition
@@ -146,62 +166,124 @@
                         state: directory
 
                     - name: mount the EFI partition
+                      mount:
+                        src: "{{partitions.efi}}"
+                        path: "{{chroot_dir}}/boot/efi"
+                        state: mounted
+                        fstype: vfat
+                        fstab: "{{fstab_file}}"
+
+#                    - name: mount /proc
+#                      mount:
+#                        src: "/proc"
+#                        path: "{{chroot_dir}}/proc"
+#                        state: mounted
+#                        opts: bind
+#                        fstype: none
+#                        fstab: "{{fstab_file}}"
+#
+#                    - name: mount /sys
+#                      mount:
+#                        src: "/sys"
+#                        path: "{{chroot_dir}}/sys"
+#                        state: mounted
+#                        opts: bind
+#                        fstype: none
+#                        fstab: "{{fstab_file}}"
+#
+#                    - name: mount /dev
+#                      mount:
+#                        src: "/dev"
+#                        path: "{{chroot_dir}}/dev"
+#                        state: mounted
+#                        opts: bind
+#                        fstype: none
+#                        fstab: "{{fstab_file}}"
+#
+#                    - name: mount /dev/pts
+#                      mount:
+#                        src: "/dev/pts"
+#                        path: "{{chroot_dir}}/dev/pts"
+#                        state: mounted
+#                        opts: bind
+#                        fstype: none
+#                        fstab: "{{fstab_file}}"
+
+                    - name: block to ensure bootstrapping runs with become
                       block:
-                        - name: mount the EFI partition
-                          mount:
-                            src: "{{partitions.efi}}"
-                            path: "{{chroot_dir}}/boot/efi"
-                            state: mounted
-                            fstype: vfat
-                            fstab: "{{fstab_file}}"
+                        # And so after all that, here we have a device we can provision on the host
+                        - name: execute bootstrapping (copy files into the device) roles
+                          include_role:
+                            name: "{{item}}"
+                          loop: "{{bootstrap_roles}}"
 
-                        - name: block to ensure bootstrapping runs with become
-                          block:
-                            # And so after all that, here we have a device we can provision on the host
-                            - name: execute bootstrapping (copy files into the device) roles
-                              include_role:
-                                name: "{{item}}"
-                              loop: "{{bootstrap_roles}}"
+                    - name: execute second phase provisioning with chroot
+                      block:
+                        - name: changing to chroot connection
+                          set_fact:
+                            old_connection: "{{ansible_connection}}"
+                            old_host: "{{ansible_host}}"
 
-                        - name: execute second phase provisioning with chroot
-                          block:
-                            - name: changing to chroot connection
-                              set_fact:
-                                old_connection: "{{ansible_connection}}"
-                                old_host: "{{ansible_host}}"
+                        - name: restoring connection type
+                          set_fact:
+                            ansible_connection: chroot
+                            ansible_host: "{{chroot_dir}}"
 
-                            - name: restoring connection type
-                              set_fact:
-                                ansible_connection: chroot
-                                ansible_host: "{{chroot_dir}}"
-
-                            - name: execute chroot (run as a container) bootstrap roles
-                              include_role:
-                                name: "{{item}}"
-                              loop: "{{chroot_roles}}"
-
-                          always:
-                            - name: restoring connection type
-                              set_fact:
-                                ansible_connection: "{{old_connection}}"
-                                ansible_host: "{{old_host}}"
-                              connection: local
+                        - name: execute chroot (run as a container) bootstrap roles
+                          include_role:
+                            name: "{{item}}"
+                          loop: "{{chroot_roles}}"
 
                       always:
-                        - name: unmount the EFI partition
-                          mount:
-                            path: "{{chroot_dir}}/boot/efi"
-                            state: unmounted
-                            fstab: "{{fstab_file}}"
+                        - name: restoring connection type
+                          set_fact:
+                            ansible_connection: "{{old_connection}}"
+                            ansible_host: "{{old_host}}"
                           connection: local
-
                   always:
+#                    - name: unmount /dev/pts
+#                      mount:
+#                        path: "{{chroot_dir}}/dev/pts"
+#                        state: unmounted
+#                        fstab: "{{fstab_file}}"
+#                      ignore_errors: true
+#
+#                    - name: unmount /dev
+#                      mount:
+#                        path: "{{chroot_dir}}/dev"
+#                        state: unmounted
+#                        fstab: "{{fstab_file}}"
+#                      ignore_errors: true
+#
+#                    - name: unmount /sys
+#                      mount:
+#                        path: "{{chroot_dir}}/sys"
+#                        state: unmounted
+#                        fstab: "{{fstab_file}}"
+#                      ignore_errors: true
+#
+#                    - name: unmount /proc
+#                      mount:
+#                        path: "{{chroot_dir}}/proc"
+#                        state: unmounted
+#                        fstab: "{{fstab_file}}"
+#                      ignore_errors: true
+
+                    - name: unmount the EFI partition
+                      mount:
+                        path: "{{chroot_dir}}/boot/efi"
+                        state: unmounted
+                        fstab: "{{fstab_file}}"
+                      connection: local
+                      ignore_errors: true
+
                     - name: unmount the root partition
                       mount:
                         path: "{{chroot_dir}}"
                         state: unmounted
                         fstab: "{{fstab_file}}"
                       connection: local
+                      ignore_errors: true
 
               always:
                 - name: unmap the loop device partitions

@@ -76,6 +76,9 @@
     replace: gpgkey=file://{{chroot_dir | realpath}}\1
   loop: "{{repo_files.files}}"
 
+- name: pre-import release GPG keys
+  shell: rpm --root {{chroot_dir | realpath}} --import {{chroot_dir | realpath}}/etc/pki/rpm-gpg/*
+
 - name: executing yum bootstrapping
   command: yum --installroot={{chroot_dir | realpath}} install -y yum
   when: yum_installed.stat.exists == False or base_repos.changed == True
